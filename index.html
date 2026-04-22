@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FraudShield — Real-Time Fraud Detection Dashboard</title>
+  <meta name="description" content="Interactive fraud detection analytics dashboard powered by the PaySim financial dataset. Visualize transaction patterns, fraud trends, and risk insights." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path d="M14 2L4 7v8c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" fill="url(#shieldGrad)" />
+          <path d="M10 14l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="shieldGrad" x1="4" y1="2" x2="24" y2="27" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#6366f1"/>
+              <stop offset="1" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="logo-text">FraudShield</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">ANALYTICS</div>
+      <a href="#" class="nav-item active" data-tab="overview" onclick="switchTab('overview', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Overview
+      </a>
+      <a href="#" class="nav-item" data-tab="transactions" onclick="switchTab('transactions', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+        Transactions
+      </a>
+      <a href="#" class="nav-item" data-tab="fraud" onclick="switchTab('fraud', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        Fraud Analysis
+        <span class="nav-badge" id="fraudBadge">—</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="patterns" onclick="switchTab('patterns', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Patterns
+      </a>
+
+      <div class="nav-section-label" style="margin-top:24px">REPORTS</div>
+      <a href="#" class="nav-item" data-tab="accounts" onclick="switchTab('accounts', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Top Accounts
+      </a>
+      <a href="#" class="nav-item" data-tab="timeline" onclick="switchTab('timeline', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Timeline
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="dataset-badge">
+        <div class="dataset-dot"></div>
+        <span id="datasetStatus">Loading dataset…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="page-title-wrap">
+          <h1 id="pageTitle">Dashboard Overview</h1>
+          <span class="page-subtitle" id="pageSubtitle">PaySim Financial Crime Dataset</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="data-source-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          paysim_sample.csv
+        </div>
+        <div class="status-pill" id="statusPill">
+          <div class="status-dot loading"></div>
+          <span id="statusText">Parsing…</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Loading screen -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-title">Parsing PaySim Dataset</div>
+        <div class="loading-sub" id="loadingMsg">Reading paysim_sample.csv…</div>
+        <div class="loading-progress-bar"><div class="loading-progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+
+    <!-- Tab: Overview -->
+    <div class="tab-panel" id="tab-overview">
+      <div class="kpi-grid">
+        <div class="kpi-card" id="kpi-total">
+          <div class="kpi-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Total Transactions</div>
+            <div class="kpi-value" id="kpiTotal">—</div>
+            <div class="kpi-sub" id="kpiTotalSub">—</div>
+          </div>
+        </div>
+        <div class="kpi-card" id="kpi-fraud">
+          <div class="kpi-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Fraudulent Transactions</div>
+            <div class="kpi-value danger" id="kpiFraud">—</div>
+            <div class="kpi-sub" id="kpiFraudSub">—</div>
+          </div>
+        </div>
+        <div class="kpi-card" id="kpi-amount">
+          <div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Total Volume</div>
+            <div class="kpi-value" id="kpiAmount">—</div>
+            <div class="kpi-sub" id="kpiAmountSub">—</div>
+          </div>
+        </div>
+        <div class="kpi-card" id="kpi-rate">
+          <div class="kpi-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Fraud Detection Rate</div>
+            <div class="kpi-value warning" id="kpiRate">—</div>
+            <div class="kpi-sub" id="kpiRateSub">—</div>
+          </div>
+        </div>
+        <div class="kpi-card" id="kpi-flagged">
+          <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Flagged Transactions</div>
+            <div class="kpi-value" id="kpiFlagged">—</div>
+            <div class="kpi-sub" id="kpiFlaggedSub">—</div>
+          </div>
+        </div>
+        <div class="kpi-card" id="kpi-fraudamt">
+          <div class="kpi-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Fraud Volume</div>
+            <div class="kpi-value danger" id="kpiFraudAmt">—</div>
+            <div class="kpi-sub" id="kpiFraudAmtSub">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Transaction Volume by Step</div>
+              <div class="chart-subtitle">Fraud vs Legitimate over simulation time</div>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-dot" style="background:#6366f1"></span>Legitimate
+              <span class="legend-dot" style="background:#ef4444"></span>Fraud
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="volumeChart"></canvas></div>
+        </div>
+        <div class="chart-card narrow">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Transaction Types</div>
+              <div class="chart-subtitle">Distribution across categories</div>
+            </div>
+          </div>
+          <div class="chart-wrap donut-wrap"><canvas id="typeChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card medium">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Fraud by Transaction Type</div>
+              <div class="chart-subtitle">Count of fraud cases per type</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="fraudTypeChart"></canvas></div>
+        </div>
+        <div class="chart-card medium">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Amount Distribution</div>
+              <div class="chart-subtitle">Transaction size buckets</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="amountDistChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Transactions -->
+    <div class="tab-panel hidden" id="tab-transactions">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">All Transactions</h2>
+          <p class="section-desc">Browse and search all PaySim transactions</p>
+        </div>
+        <div class="table-controls">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="txSearch" placeholder="Search account, type…" oninput="filterTransactions()" />
+          </div>
+          <select id="typeFilter" onchange="filterTransactions()" class="filter-select">
+            <option value="">All Types</option>
+            <option>PAYMENT</option>
+            <option>TRANSFER</option>
+            <option>CASH_OUT</option>
+            <option>CASH_IN</option>
+            <option>DEBIT</option>
+          </select>
+          <select id="fraudFilter" onchange="filterTransactions()" class="filter-select">
+            <option value="">All</option>
+            <option value="1">Fraud Only</option>
+            <option value="0">Legit Only</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="data-table" id="txTable">
+            <thead>
+              <tr>
+                <th>Step</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Origin Account</th>
+                <th>Orig Balance Before</th>
+                <th>Orig Balance After</th>
+                <th>Dest Account</th>
+                <th>Dest Balance Before</th>
+                <th>Dest Balance After</th>
+                <th>Fraud</th>
+                <th>Flagged</th>
+              </tr>
+            </thead>
+            <tbody id="txBody"></tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span id="txCount">—</span>
+          <div class="pagination" id="txPagination"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Fraud Analysis -->
+    <div class="tab-panel hidden" id="tab-fraud">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Fraud Analysis</h2>
+          <p class="section-desc">Deep dive into detected fraudulent transactions</p>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns: repeat(3,1fr); margin-bottom: 24px">
+        <div class="kpi-card">
+          <div class="kpi-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Total Fraud Cases</div>
+            <div class="kpi-value danger" id="fraudTotal2">—</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Avg Fraud Amount</div>
+            <div class="kpi-value" id="fraudAvgAmt">—</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div class="kpi-body">
+            <div class="kpi-label">Max Single Fraud</div>
+            <div class="kpi-value danger" id="fraudMaxAmt">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card medium">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Fraud Amount Distribution</div>
+              <div class="chart-subtitle">Amount ranges of fraudulent transactions</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="fraudAmtDistChart"></canvas></div>
+        </div>
+        <div class="chart-card medium">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Balance Drain Analysis</div>
+              <div class="chart-subtitle">Origin account balance before vs after fraud</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="balanceDrainChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-top:24px">
+        <div class="chart-header" style="padding:16px 20px">
+          <div class="chart-title">Fraudulent Transactions</div>
+          <span class="badge-red" id="fraudTableCount">—</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Step</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Origin</th>
+                <th>Orig Bal Before</th>
+                <th>Orig Bal After</th>
+                <th>Destination</th>
+                <th>Dest Bal Before</th>
+                <th>Dest Bal After</th>
+                <th>Flagged</th>
+              </tr>
+            </thead>
+            <tbody id="fraudBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Patterns -->
+    <div class="tab-panel hidden" id="tab-patterns">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Transaction Patterns</h2>
+          <p class="section-desc">Statistical patterns and behavioral insights</p>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Hourly Activity Heatmap</div>
+              <div class="chart-subtitle">Transaction count per simulation step (grouped by 24h)</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="heatmapChart"></canvas></div>
+        </div>
+        <div class="chart-card narrow">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Fraud Type Share</div>
+              <div class="chart-subtitle">Fraud % within each type</div>
+            </div>
+          </div>
+          <div class="chart-wrap donut-wrap"><canvas id="fraudShareChart"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card medium">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Average Amount by Type</div>
+              <div class="chart-subtitle">Mean transaction value per category</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="avgAmtChart"></canvas></div>
+        </div>
+        <div class="chart-card medium">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Balance Delta Comparison</div>
+              <div class="chart-subtitle">Origin vs Destination balance changes</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="balanceDeltaChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Accounts -->
+    <div class="tab-panel hidden" id="tab-accounts">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Top Accounts</h2>
+          <p class="section-desc">Highest activity accounts — origins and destinations</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="table-card">
+          <div class="chart-header" style="padding:16px 20px">
+            <div class="chart-title">Top Origin Accounts</div>
+            <span class="badge-blue">by total sent</span>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Account</th><th>Transactions</th><th>Total Sent</th><th>Fraud?</th></tr></thead>
+              <tbody id="topOrigBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="chart-header" style="padding:16px 20px">
+            <div class="chart-title">Top Destination Accounts</div>
+            <span class="badge-blue">by total received</span>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Account</th><th>Transactions</th><th>Total Received</th><th>Fraud Dest?</th></tr></thead>
+              <tbody id="topDestBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="charts-row" style="margin-top:24px">
+        <div class="chart-card full">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Top 15 Accounts by Volume</div>
+              <div class="chart-subtitle">Combined sent + received (origin accounts)</div>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:320px"><canvas id="topAccountsChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Timeline -->
+    <div class="tab-panel hidden" id="tab-timeline">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Fraud Timeline</h2>
+          <p class="section-desc">Fraud events plotted over simulation time steps</p>
+        </div>
+      </div>
+      <div class="chart-card full">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Cumulative Fraud Over Time</div>
+            <div class="chart-subtitle">Running total of fraud cases detected</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:340px"><canvas id="cumulativeFraudChart"></canvas></div>
+      </div>
+      <div class="charts-row" style="margin-top:24px">
+        <div class="chart-card medium">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Fraud Velocity</div>
+              <div class="chart-subtitle">New fraud cases per step bucket</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="fraudVelocityChart"></canvas></div>
+        </div>
+        <div class="chart-card medium">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Fraud Amount Over Time</div>
+              <div class="chart-subtitle">Total fraud $ per step bucket</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="fraudAmtTimeChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "fraudshield-dashboard",
+  "version": "1.0.0",
+  "description": "Interactive fraud detection analytics dashboard powered by PaySim financial dataset",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000 || php -S localhost:8000",
+    "serve": "npx http-server -p 8000"
+  },
+  "keywords": [
+    "fraud-detection",
+    "analytics",
+    "dashboard",
+    "visualization",
+    "chart.js",
+    "financial-data"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "chart.js": "^4.4.0",
+    "papaparse": "^5.4.1"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/fraudshield-dashboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/fraudshield-dashboard/issues"
+  },
+  "homepage": "https://github.com/yourusername/fraudshield-dashboard#readme"
+}
