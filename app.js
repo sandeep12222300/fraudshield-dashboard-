@@ -69,7 +69,7 @@ const axisOpts = () => ({
 const TAB_TITLES = {
   overview:'Dashboard Overview', transactions:'All Transactions',
   fraud:'Fraud Analysis', patterns:'Transaction Patterns',
-  accounts:'Top Accounts', timeline:'Fraud Timeline',
+  accounts:'High-Risk Accounts', timeline:'Fraud Timeline',
 };
 
 function switchTab(tab, link) {
