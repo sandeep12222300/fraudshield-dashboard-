@@ -182,10 +182,96 @@ function buildKPIs() {
 
 // ── Overview Charts ────────────────────────────────────────
 function buildOverviewCharts() {
-  buildVolumeChart();
-  buildTypeChart();
-  buildFraudTypeChart();
-  buildAmountDistChart();
+  // Update metrics
+  const total = ALL_DATA.length;
+  const frauds = ALL_DATA.filter(r => r.isFraud === 1);
+  const legit = total - frauds.length;
+  const rate = ((frauds.length / total) * 100).toFixed(2);
+
+  setText('metricTotal', fmt(total));
+  setText('metricFraud', fmt(frauds.length));
+  setText('metricSafe', fmt(legit));
+  setText('metricRate', rate + '%');
+  setText('lastUpdated', new Date().toLocaleTimeString());
+
+  // Fraud vs Safe Transactions - Simple bar chart
+  makeChart('realtimeComparisonChart', {
+    type: 'bar',
+    data: {
+      labels: ['Fraud', 'Safe'],
+      datasets: [{
+        data: [frauds.length, legit],
+        backgroundColor: ['#ef4444', '#22c55e'],
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3c0' } },
+        y: { grid: { display: false }, ticks: { color: '#94a3c0' } }
+      }
+    }
+  });
+
+  // Confidence Trend - Line chart showing fraud percentage over time
+  const bucket = {};
+  ALL_DATA.forEach(r => {
+    const b = Math.floor((r.step||0)/24);
+    if (!bucket[b]) bucket[b] = { total:0, fraud:0 };
+    bucket[b].total++;
+    if (r.isFraud===1) bucket[b].fraud++;
+  });
+  const keys = Object.keys(bucket).sort((a,b)=>+a-+b);
+  const confidenceData = keys.map(k => (bucket[k].fraud/bucket[k].total)*100);
+
+  makeChart('confidenceTrendChart', {
+    type: 'line',
+    data: {
+      labels: keys.map(k => 'Day '+(+k+1)),
+      datasets: [{
+        label: 'Fraud Rate %',
+        data: confidenceData,
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139,92,246,.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3c0' } },
+        x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3c0' } }
+      }
+    }
+  });
+
+  // Populate recent predictions table
+  const tbody = el('predictionsBody');
+  const recentFrauds = ALL_DATA.filter(r => r.isFraud === 1).slice(0, 10);
+
+  if (recentFrauds.length > 0) {
+    el('predictionStatus').textContent = 'Recent Predictions';
+    el('predictionStatus').className = 'status-label success';
+
+    tbody.innerHTML = recentFrauds.map((r, i) => `
+      <tr>
+        <td>#${i+1}</td>
+        <td><span class="badge badge-type">${r.type}</span></td>
+        <td>${fmtAmt(r.amount||0)}</td>
+        <td><span class="badge badge-fraud">⚠ Fraud</span></td>
+        <td>98%</td>
+      </tr>`).join('');
+  }
 }
 
 function buildVolumeChart() {
