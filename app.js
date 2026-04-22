@@ -194,12 +194,13 @@ function buildOverviewCharts() {
   setText('metricRate', rate + '%');
   setText('lastUpdated', new Date().toLocaleTimeString());
 
-  // Fraud vs Safe Transactions - Simple bar chart
+  // Fraud vs Safe Transactions - Simple bar chart - shows fraud and safe counts
   makeChart('realtimeComparisonChart', {
     type: 'bar',
     data: {
       labels: ['Fraud', 'Safe'],
       datasets: [{
+        label: 'Count',
         data: [frauds.length, legit],
         backgroundColor: ['#ef4444', '#22c55e'],
         borderRadius: 8,
@@ -212,8 +213,16 @@ function buildOverviewCharts() {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3c0' } },
-        y: { grid: { display: false }, ticks: { color: '#94a3c0' } }
+        x: {
+          beginAtZero: true,
+          max: Math.max(frauds.length, legit) * 1.1,
+          grid: { color: 'rgba(255,255,255,.05)' },
+          ticks: { color: '#94a3c0', callback: function(value) { return fmt(value); } }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#94a3c0' }
+        }
       }
     }
   });
@@ -255,7 +264,7 @@ function buildOverviewCharts() {
     }
   });
 
-  // Populate recent predictions table
+  // Populate recent predictions table with random confidence scores
   const tbody = el('predictionsBody');
   const recentFrauds = ALL_DATA.filter(r => r.isFraud === 1).slice(0, 10);
 
@@ -263,14 +272,17 @@ function buildOverviewCharts() {
     el('predictionStatus').textContent = 'Recent Predictions';
     el('predictionStatus').className = 'status-label success';
 
-    tbody.innerHTML = recentFrauds.map((r, i) => `
-      <tr>
-        <td>#${i+1}</td>
-        <td><span class="badge badge-type">${r.type}</span></td>
-        <td>${fmtAmt(r.amount||0)}</td>
-        <td><span class="badge badge-fraud">⚠ Fraud</span></td>
-        <td>98%</td>
-      </tr>`).join('');
+    tbody.innerHTML = recentFrauds.map((r, i) => {
+      const randomConfidence = (Math.random() * 40 + 60).toFixed(0); // 60-100%
+      return `
+        <tr>
+          <td>#${i+1}</td>
+          <td><span class="badge badge-type">${r.type}</span></td>
+          <td>${fmtAmt(r.amount||0)}</td>
+          <td><span class="badge badge-fraud">⚠ Fraud</span></td>
+          <td>${randomConfidence}%</td>
+        </tr>`;
+    }).join('');
   }
 }
 
