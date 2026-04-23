@@ -615,17 +615,31 @@ body {
 .search-input:focus { border-color: var(--indigo); }
 
 .refresh-btn {
+  padding: 8px 16px;
   background: var(--indigo);
-  border: none;
   color: white;
-  border-radius: 8px;
-  padding: 9px 18px;
-  font-size: .82rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  transition: background var(--transition);
+  transition: var(--transition);
+  font-size: 0.9rem;
 }
-.refresh-btn:hover { background: #4f46e5; }
+.refresh-btn:not(:disabled):hover {
+  background: linear-gradient(135deg, var(--indigo), var(--purple));
+  box-shadow: 0 0 20px rgba(99,102,241,.4);
+}
+.refresh-btn:disabled {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.refresh-btn:disabled:hover {
+  background: var(--bg-card);
+  box-shadow: none;
+}
 
 /* Metrics Grid */
 .metrics-grid {
